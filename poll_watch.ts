@@ -8,11 +8,13 @@ const STATES_TO_WATCH = [
   'AK', 'AL', 'AR', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'GA', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MI', 'MN', 'MO', 'MS', 'MT',
   'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VA', 'VT', 'WA', 'WI', 'WV', 'WY'
 ]
+const STATES_TO_HIGHLIGHT = ['NA', 'AR', 'NC', 'MI', 'WI', 'PA', 'GA']
 
 const STYLE = {
   RESET: '\x1b[0m',
   BOLD: '\x1b[1m',
   UNDERLINE: '\x1b[4m',
+  YELLOW_TEXT: '\x1b[33m',
   BLUE_TEXT: '\x1b[36m',
   BLUE_BACKGROUND: '\x1b[44m',
   RED_TEXT: '\x1b[1;91m',
@@ -32,7 +34,11 @@ async function printRaceStats(statesToPrint: string[]) {
   const now = moment().startOf('minute');
 
   const columns: Column[] = [
-    { name: 'State', getValue: ({ stateName }) => stateName, width: 22 },
+    {
+      name: 'State',
+      getValue: ({ stateName }) => stateName, width: 22,
+      getStyle: ({ statePostal }) => STATES_TO_HIGHLIGHT.includes(statePostal) ? STYLE.YELLOW_TEXT : undefined
+    },
     { name: 'EV', getValue: ({ electTotal }) => electTotal, width: 5 },
     {
       name: 'Counted',
@@ -47,7 +53,7 @@ async function printRaceStats(statesToPrint: string[]) {
         }
         return `${leader} +${voteLeadPercentage}`.padEnd(10) + `${getChangeSuffix(now, statePostal, 'voteLeadPercentage', voteLeadPercentage || 0)}`
       },
-      getColor: race => {
+      getStyle: race => {
         if (race.leader === 'Harris') {
           return STYLE.BLUE_TEXT
         } else if (race.leader === 'Trump') {
@@ -99,8 +105,8 @@ function getHeader(columns: Column[]) {
 function formatRace(race: RaceInfo, columns: Column[]) {
   const winnerColor = race.raceCallStatus === 'Called' ? getColor(race.leader) : undefined;
   const cells = columns
-    .map(({ getValue, width, getColor }) => {
-      const color = winnerColor || getColor?.(race) || ''
+    .map(({ getValue, width, getStyle }) => {
+      const color = winnerColor || getStyle?.(race) || ''
       return color + ` ${getValue(race)} `.padEnd(width) + STYLE.RESET
     });
   return '|' + cells.join('|') + '|';
@@ -120,7 +126,7 @@ function countElectoralVotes(races: RaceInfo[], candidate: RaceInfo['leader']) {
 interface Column {
   name: string
   getValue(stateInfo: RaceInfo): string | number
-  getColor?(stateInfo: RaceInfo): string | undefined
+  getStyle?(stateInfo: RaceInfo): string | undefined
   width: number
 }
 
