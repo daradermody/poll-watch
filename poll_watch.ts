@@ -13,7 +13,9 @@ const STYLE = {
   RESET: '\x1b[0m',
   BOLD: '\x1b[1m',
   UNDERLINE: '\x1b[4m',
+  BLUE_TEXT: '\x1b[36m',
   BLUE_BACKGROUND: '\x1b[44m',
+  RED_TEXT: '\x1b[1;91m',
   RED_BACKGROUND: '\x1b[41m'
 };
 
@@ -35,7 +37,7 @@ async function printRaceStats(statesToPrint: string[]) {
     {
       name: 'Counted',
       getValue: ({ statePostal, eevp }) => `${eevp}%${getChangeSuffix(now, statePostal, 'eevp', eevp)}`,
-      width: 15
+      width: 16
     },
     {
       name: 'Leader',
@@ -44,6 +46,13 @@ async function printRaceStats(statesToPrint: string[]) {
           return 'N/A'
         }
         return `${leader} +${voteLeadPercentage}`.padEnd(10) + `${getChangeSuffix(now, statePostal, 'voteLeadPercentage', voteLeadPercentage || 0)}`
+      },
+      getColor: race => {
+        if (race.leader === 'Harris') {
+          return STYLE.BLUE_TEXT
+        } else if (race.leader === 'Trump') {
+          return STYLE.RED_TEXT
+        }
       },
       width: 23
     },
@@ -88,16 +97,17 @@ function getHeader(columns: Column[]) {
 }
 
 function formatRace(race: RaceInfo, columns: Column[]) {
-  const colour = getColour(race) || '';
+  const winnerColor = race.raceCallStatus === 'Called' ? getColor(race.leader) : undefined;
   const cells = columns
-    .map(({ getValue, width }) => colour + ` ${getValue(race)} `.padEnd(width) + STYLE.RESET);
+    .map(({ getValue, width, getColor }) => {
+      const color = winnerColor || getColor?.(race) || ''
+      return color + ` ${getValue(race)} `.padEnd(width) + STYLE.RESET
+    });
   return '|' + cells.join('|') + '|';
 }
 
-function getColour(race: RaceInfo) {
-  if (race.raceCallStatus === 'Called') {
-    return race.leader === 'Harris' ? STYLE.BLUE_BACKGROUND : STYLE.RED_BACKGROUND;
-  }
+function getColor(leader: RaceInfo['leader']) {
+  return leader === 'Harris' ? STYLE.BLUE_BACKGROUND : STYLE.RED_BACKGROUND
 }
 
 function countElectoralVotes(races: RaceInfo[], candidate: RaceInfo['leader']) {
@@ -110,6 +120,7 @@ function countElectoralVotes(races: RaceInfo[], candidate: RaceInfo['leader']) {
 interface Column {
   name: string
   getValue(stateInfo: RaceInfo): string | number
+  getColor?(stateInfo: RaceInfo): string | undefined
   width: number
 }
 
