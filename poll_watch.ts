@@ -3,12 +3,12 @@
 import moment, { type Moment } from 'moment'
 import {fetchData, type RaceInfo} from './fetch_data.ts'
 
-// const STATES_TO_WATCH = ['AZ', 'NV', 'WI', 'MI', 'PA', 'NC', 'GA'];
 const STATES_TO_WATCH = [
-  'AK', 'AL', 'AR', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'GA', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MI', 'MN', 'MO', 'MS', 'MT',
-  'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VA', 'VT', 'WA', 'WI', 'WV', 'WY'
+  'DC',  'VT', 'MD', 'MA', 'HI', 'CA', 'WA', 'CT', 'NY', 'RI', 'DE', 'IL', 'NJ', 'OR', 'CO', 'ME', 'NM', 'VA', 'NH', 'MN',
+  'MI', 'WI', 'PA', 'NV', 'GA', 'NC', 'AZ',
+  'FL', 'IA', 'TX', 'OH', 'AK', 'SC', 'MO', 'KS', 'IN', 'NE', 'MT', 'MS', 'LA', 'UT', 'TN', 'AL', 'SD', 'KY', 'AR', 'ND', 'ID', 'OK', 'WV', 'WY'
 ]
-const STATES_TO_HIGHLIGHT = ['NA', 'AR', 'NC', 'MI', 'WI', 'PA', 'GA']
+const STATES_TO_HIGHLIGHT = ['NA', 'AZ', 'NC', 'MI', 'NV', 'WI', 'PA', 'GA']
 
 const STYLE = {
   RESET: '\x1b[0m',
@@ -25,12 +25,14 @@ const history: History = {};
 
 async function main() {
   await printRaceStats(STATES_TO_WATCH);
-  setInterval(() => printRaceStats(STATES_TO_WATCH), 30000);
+  setInterval(() => printRaceStats(STATES_TO_WATCH), 10_000);
 }
 
 async function printRaceStats(statesToPrint: string[]) {
   const races = await fetchData()
-  const watchedRaces = races.filter(race => statesToPrint.includes(race.statePostal))
+  const watchedRaces = races
+    .filter(race => statesToPrint.includes(race.statePostal))
+    .sort((raceA, raceB) => statesToPrint.indexOf(raceB.statePostal) > statesToPrint.indexOf(raceA.statePostal) ? -1 : 1)
   const now = moment().startOf('minute');
 
   const columns: Column[] = [
@@ -51,7 +53,7 @@ async function printRaceStats(statesToPrint: string[]) {
         if (!leader) {
           return 'N/A'
         }
-        return `${leader} +${voteLeadPercentage}`.padEnd(10) + `${getChangeSuffix(now, statePostal, 'voteLeadPercentage', voteLeadPercentage || 0)}`
+        return `${leader} +${voteLeadPercentage}%`.padEnd(10) + `${getChangeSuffix(now, statePostal, 'voteLeadPercentage', voteLeadPercentage || 0)}`
       },
       getStyle: race => {
         if (race.leader === 'Harris') {
@@ -60,7 +62,7 @@ async function printRaceStats(statesToPrint: string[]) {
           return STYLE.RED_TEXT
         }
       },
-      width: 23
+      width: 24
     },
   ];
 

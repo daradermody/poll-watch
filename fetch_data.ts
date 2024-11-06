@@ -16,7 +16,7 @@ export async function fetchData(): Promise<RaceInfo[]> {
   const result = await axios.get<GuardianData>('https://interactive.guim.co.uk/2024/11/us-election-data/production/v1/latest/details/results_P.json')
   const races = result.data
     .filter(race => race.statePostal !== 'US')
-    .sort((a, b) => a.eevp > b.eevp ? -1 : 1)
+    // .sort((a, b) => a.eevp > b.eevp ? -1 : 1)
 
   return races.map(race => {
     const harris = race.candidates.find(candidate => candidate.last === 'Harris')!
